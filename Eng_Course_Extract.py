@@ -73,6 +73,7 @@ for URL in urls:
             elif soup.findAll('div', class_ = 'acalog-core')[index].find('ol', start = "1"):
                 for note in soup.findAll('div', class_ = 'acalog-core')[index].findAll('ol', start = "1"):
                     general_note += [str(counter) + "." + note.get_text()]
+                    counter += 1
         if soup.findAll('div', class_ = 'acalog-core')[index].find('h2') and "Requirements" in soup.findAll('div', class_ = 'acalog-core')[index].find('h2').get_text():
             break
         index += 1
@@ -173,7 +174,7 @@ for URL in urls:
                     excel_col += 1
         gn = ""
         for note in general_note:
-            gn += note + "\n"
+            gn += note + " \n"
     merge_format = workbook.add_format({
     'align': 'center',
     'valign': 'vcenter'

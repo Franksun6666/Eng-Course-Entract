@@ -159,8 +159,8 @@ for URL in urls:
         worksheet.write('C' + str(excel_col), total_units)
         for ke, val in value.items():
             # Update Sub Units
-            worksheet.write('D' + str(excel_col), ke)
             for va in val:
+                worksheet.write('D' + str(excel_col), ke)
                 if va[2]:
                     worksheet.write('A' + str(excel_col), prog_title[prog_index])
                     prog_index += 1

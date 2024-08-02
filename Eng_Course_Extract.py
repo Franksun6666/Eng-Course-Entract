@@ -57,19 +57,29 @@ for URL in urls:
     soup = BeautifulSoup(page.content, "html.parser")
 
     # Extract Program Title
-    prog_title = soup.find('h1').get_text()
+    prog_title = [soup.find('h1').get_text()]
+    prog_index = 1
     index = 0
     big_dict = dict()
     dic = dict()
+    general_note = []
+    counter = 1
 
     # Get The Index of Next Section Below Requirements
     while index < len(soup.findAll('div', class_ = 'acalog-core')):
+        if soup.findAll('div', class_ = 'acalog-core')[index].find('h2') and "Note" in soup.findAll('div', class_ = 'acalog-core')[index].find('h2').get_text():
+            if soup.findAll('div', class_ = 'acalog-core')[index].find('p'):
+                general_note += [soup.findAll('div', class_ = 'acalog-core')[index].find('p').get_text()]
+            elif soup.findAll('div', class_ = 'acalog-core')[index].find('ol', start = "1"):
+                for note in soup.findAll('div', class_ = 'acalog-core')[index].findAll('ol', start = "1"):
+                    general_note += [str(counter) + "." + note.get_text()]
         if soup.findAll('div', class_ = 'acalog-core')[index].find('h2') and "Requirements" in soup.findAll('div', class_ = 'acalog-core')[index].find('h2').get_text():
             break
         index += 1
     index += 1
     # Loop Through All "acalog-core" div class 
     while index < len(soup.findAll('div', class_ = 'acalog-core')):
+        flag = False
         # Extract Subsection In A Specific Level
         if not soup.findAll('div', class_ = 'acalog-core')[index].find('h3'):
             text = soup.findAll('div', class_ = 'acalog-core')[index].get_text()
@@ -94,7 +104,12 @@ for URL in urls:
             try:
                 units = soup.findAll('div', class_ = 'acalog-core')[index].find('h4').get_text()
             except AttributeError:
-                units = soup.findAll('div', class_ = 'acalog-core')[index].find('h5').get_text()
+                try:
+                    units = soup.findAll('div', class_ = 'acalog-core')[index].find('h5').get_text()
+                except AttributeError:
+                    if soup.findAll('div', class_ = 'acalog-core')[index].find('h2') and "Requirements" in soup.findAll('div', class_ = 'acalog-core')[index].find('h2').get_text():
+                        prog_title += [soup.findAll('div', class_ = 'acalog-core')[index].find('h2').get_text()]
+                        flag = True
             # Empty Course List, Must Be Plain Text, Format and Extract
             if len(course_list) == 0:
                 for u in ul:
@@ -104,9 +119,9 @@ for URL in urls:
                         course_list += pt
             # Duplicate Keys Differentiation, Use List of Tuples, fst = Course_List & snd = Note_List
             if units not in dic:
-                dic[units] = [(course_list, note_list)]
+                dic[units] = [(course_list, note_list, flag)]
             else:
-                dic[units] = dic[units] + [(course_list, note_list)]
+                dic[units] = dic[units] + [(course_list, note_list, flag)]
         # h3 Tags Are the Level and Total Units
         else: 
             dic = dict()
@@ -117,16 +132,16 @@ for URL in urls:
     ## Import Data Into Excel
     import xlsxwriter
     import os
-    file_path = (prog_title + ".xlsx").replace('/', '_')
+    file_path = (prog_title[0] + ".xlsx").replace('/', '_')
     if not os.path.exists(file_path):
         # Create a new Excel file and add a worksheet
         workbook = xlsxwriter.Workbook(file_path)
         worksheet = workbook.add_worksheet()
     # File path for the Excel file
-    headers = ['PROGRAM', 'LEVEL', 'Total Units', 'Sub-Units', 'Required Courses', 'Term Offered (from Scheduling)', 'Section Notes', 'General Notes']
+    headers = ['PROGRAM', 'LEVEL', 'Total Units', 'Sub-Units', 'Required Courses', 'Term Offered (from Scheduling)', 'Section-Notes', 'General-Notes']
     worksheet.write_row(0, 0, headers)
     # Update Program Title
-    worksheet.write('A2', prog_title) 
+    worksheet.write('A2', prog_title[0]) 
     excel_col = 2
     for key, value in big_dict.items():
         # Check to See If There's Any Additional Info After 'units'
@@ -145,6 +160,9 @@ for URL in urls:
             # Update Sub Units
             worksheet.write('D' + str(excel_col), ke)
             for va in val:
+                if va[2]:
+                    worksheet.write('A' + str(excel_col), prog_title[prog_index])
+                    prog_index += 1
                 for v in va[0]:
                     # Update Required Courses
                     worksheet.write('E' + str(excel_col), v)
@@ -153,5 +171,13 @@ for URL in urls:
                             # Update Section Notes, If Any
                             worksheet.write('G' + str(excel_col), n)
                     excel_col += 1
+        gn = ""
+        for note in general_note:
+            gn += note + "\n"
+    merge_format = workbook.add_format({
+    'align': 'center',
+    'valign': 'vcenter'
+    })
+    worksheet.merge_range(1, 7, excel_col, 7, gn, merge_format)
     workbook.close()
     print(URL + " completed")

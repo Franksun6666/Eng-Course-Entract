@@ -71,7 +71,7 @@ for URL in urls:
             if soup.findAll('div', class_ = 'acalog-core')[index].find('p'):
                 general_note += [soup.findAll('div', class_ = 'acalog-core')[index].find('p').get_text()]
             elif soup.findAll('div', class_ = 'acalog-core')[index].find('ol', start = "1"):
-                for note in soup.findAll('div', class_ = 'acalog-core')[index].findAll('ol', start = "1"):
+                for note in soup.findAll('div', class_ = 'acalog-core')[index].findAll('li'):
                     general_note += [str(counter) + "." + note.get_text()]
                     counter += 1
         if soup.findAll('div', class_ = 'acalog-core')[index].find('h2') and "Requirements" in soup.findAll('div', class_ = 'acalog-core')[index].find('h2').get_text():

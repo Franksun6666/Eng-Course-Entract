@@ -1,9 +1,11 @@
 import requests
 import re
+import xlsxwriter
+import os
 from bs4 import BeautifulSoup
+from xlsxwriter.worksheet import (Worksheet, cell_number_tuple, cell_string_tuple)
 
 ## Data Extraction from Academic Calendar
-
 urls = [
     "https://academiccalendars.romcmaster.ca/preview_program.php?catoid=56&poid=28137",
     "https://academiccalendars.romcmaster.ca/preview_program.php?catoid=56&poid=28134",
@@ -131,8 +133,6 @@ for URL in urls:
         big_dict[level_units] = dic
 
     ## Import Data Into Excel
-    import xlsxwriter
-    import os
     file_path = (prog_title[0] + ".xlsx").replace('/', '_')
     if not os.path.exists(file_path):
         # Create a new Excel file and add a worksheet
@@ -180,5 +180,46 @@ for URL in urls:
     'valign': 'vcenter'
     })
     worksheet.merge_range(1, 7, excel_col, 7, gn, merge_format)
+
+    def get_column_width(worksheet,column):
+        """Get the max column width in a `Worksheet` column."""
+        strings = getattr(worksheet, '_ts_all_strings', None)
+        if strings is None:
+            strings = worksheet._ts_all_strings = sorted(
+                worksheet.str_table.string_table,
+                key=worksheet.str_table.string_table.__getitem__)
+        lengths = set()
+        for row_id, colums_dict in worksheet.table.items(): 
+            data = colums_dict.get(column)
+            if not data:
+                continue
+            if type(data) is cell_string_tuple:
+                iter_length = len(strings[data.string])
+                if not iter_length:
+                    continue
+                lengths.add(iter_length)
+                continue
+            if type(data) is cell_number_tuple:
+                iter_length = len(str(data.number))
+                if not iter_length:
+                    continue
+                lengths.add(iter_length)
+        if not lengths:
+            return None
+        return max(lengths)
+
+
+    def set_column_autowidth(worksheet: Worksheet, column: int):
+        """
+        Set the width automatically on a column in the `Worksheet`.
+        !!! Make sure you run this function AFTER having all cells filled in
+        the worksheet!
+        """
+        maxwidth = get_column_width(worksheet, column)
+        if maxwidth is None:
+            return
+        worksheet.set_column(first_col=column, last_col=column, width=maxwidth)
+    for i in range(8):
+        set_column_autowidth(worksheet, i)
     workbook.close()
     print(URL + " completed")

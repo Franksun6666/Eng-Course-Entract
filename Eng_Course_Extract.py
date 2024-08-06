@@ -103,13 +103,15 @@ for URL in urls:
                 for note in notes:
                     if "Note:" in note.get_text():
                         note_list.append(note.get_text().replace('\xa0', ' ').replace('\n', ''))
-            # Extract Subunits
+            # Extract Subunits / Stream
             try:
                 units = soup.findAll('div', class_ = 'acalog-core')[index].find('h4').get_text()
             except AttributeError:
+                # Extract Subunits in Certain Stream
                 try:
                     units = soup.findAll('div', class_ = 'acalog-core')[index].find('h5').get_text()
                 except AttributeError:
+                    # Special Circumstance Where the Website Also Contains Requirements for Previous Year's Students
                     if soup.findAll('div', class_ = 'acalog-core')[index].find('h2') and "Requirements" in soup.findAll('div', class_ = 'acalog-core')[index].find('h2').get_text():
                         prog_title += [soup.findAll('div', class_ = 'acalog-core')[index].find('h2').get_text()]
                         flag = True
@@ -175,10 +177,12 @@ for URL in urls:
         gn = ""
         for note in general_note:
             gn += note + " \n"
+    # Set Merge Format to Center
     merge_format = workbook.add_format({
     'align': 'center',
     'valign': 'vcenter'
     })
+    # Merge General Notes Column Into One Big Block
     worksheet.merge_range(1, 7, excel_col, 7, gn, merge_format)
 
     def get_column_width(worksheet,column):
@@ -208,18 +212,16 @@ for URL in urls:
             return None
         return max(lengths)
 
-
+    # Set the Width Automatically On A Column In The `Worksheet`.
     def set_column_autowidth(worksheet: Worksheet, column: int):
-        """
-        Set the width automatically on a column in the `Worksheet`.
-        !!! Make sure you run this function AFTER having all cells filled in
-        the worksheet!
-        """
         maxwidth = get_column_width(worksheet, column)
         if maxwidth is None:
             return
         worksheet.set_column(first_col=column, last_col=column, width=maxwidth)
+    
+    # Autowidth On All Columns in Worksheet
     for i in range(8):
         set_column_autowidth(worksheet, i)
+
     workbook.close()
     print(URL + " completed")
